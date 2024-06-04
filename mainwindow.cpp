@@ -20,6 +20,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->openButton, &QPushButton::clicked, this, &MainWindow::openNotebook);
     connect(ui->addButton, &QPushButton::clicked, this, &MainWindow::addWord);
     connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::saveNotebook);
+    connect(ui->hideChinese, &QCheckBox::stateChanged, this, &MainWindow::hideChinese);
+    connect(ui->hideEnglish, &QCheckBox::stateChanged, this, &MainWindow::hideEnglish);
+    connect(ui->onlyMarked, &QCheckBox::stateChanged, this, &MainWindow::hideUnmarked);
     connect(model, &QAbstractItemModel::dataChanged, this, &MainWindow::tableViewChanged);
 }
 
@@ -32,6 +35,7 @@ void MainWindow::showNotebook(const QList<WordItem> &data)
 {
     model->clear();
     model->setHorizontalHeaderLabels(QStringList() << "英文" << "中文" << "标记");
+    ui->tableView->setColumnHidden(3, true);
     for (int i=0; i<data.size(); i++)
     {
         const WordItem &item = data[i];
@@ -40,7 +44,7 @@ void MainWindow::showNotebook(const QList<WordItem> &data)
         model->setData(model->index(newRow, 0), item.english);
         model->setData(model->index(newRow, 1), item.chinese);
         model->setData(model->index(newRow, 2), item.mark ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
-        model->setData(model->index(newRow, 3), item.seq, ~Qt::DisplayRole);
+        model->setData(model->index(newRow, 3), item.seq);
         model->item(newRow, 2)->setFlags((Qt::ItemIsEnabled | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
     }
 }
@@ -98,7 +102,7 @@ void MainWindow::addWord()
     model->setData(model->index(newRow, 0), "");
     model->setData(model->index(newRow, 1), "");
     model->setData(model->index(newRow, 2), Qt::Unchecked, Qt::CheckStateRole);
-    model->setData(model->index(newRow, 3), QDateTime::currentDateTime().toSecsSinceEpoch(), ~Qt::DisplayRole);
+    model->setData(model->index(newRow, 3), QDateTime::currentDateTime().toSecsSinceEpoch());
     model->item(newRow, 2)->setFlags((Qt::ItemIsEnabled | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
     // 新的单词项进入编辑状态
     ui->tableView->setFocus();
@@ -154,6 +158,23 @@ void MainWindow::updateStoreState(bool stored)
         this->setWindowTitle(currNotebook);
     else
         this->setWindowTitle(currNotebook + " *");
+}
+
+void MainWindow::hideChinese(bool hidden)
+{
+    ui->tableView->setColumnHidden(1, hidden);
+}
+
+void MainWindow::hideEnglish(bool hidden)
+{
+    ui->tableView->setColumnHidden(0, hidden);
+}
+
+void MainWindow::hideUnmarked(bool hidden)
+{
+    for(int i=0; i<model->rowCount(); i++)
+        if (!model->item(i, 2)->checkState())
+            ui->tableView->setRowHidden(i, hidden);
 }
 
 const QStringList& MainWindow::getNotebookList()

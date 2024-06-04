@@ -37,6 +37,9 @@ private slots:
     void saveNotebook();
     void tableViewChanged(const QModelIndex &index);
     void addWord();
+    void hideChinese(bool hidden);
+    void hideEnglish(bool hidden);
+    void hideUnmarked(bool hidden);
 
 private:
     Ui::MainWindow *ui;
@@ -60,5 +63,6 @@ private:
     void setNewNotebookName();
     // 更新是否存储的状态
     void updateStoreState(bool stored);
+
 };
 #endif // MAINWINDOW_H
