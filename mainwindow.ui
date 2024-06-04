@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>单词本</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTableView" name="tableView">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="addButton">
+        <property name="text">
+         <string>新增单词</string>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+Return</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="openButton">
+        <property name="text">
+         <string>打开单词本</string>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+O</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="saveButton">
+        <property name="text">
+         <string>保存单词本</string>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+S</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <action name="openAction">
+   <property name="text">
+    <string>打开单词本</string>
+   </property>
+  </action>
+  <action name="saveAction">
+   <property name="text">
+    <string>保存单词本</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
