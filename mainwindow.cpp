@@ -34,7 +34,7 @@ MainWindow::~MainWindow()
 void MainWindow::showNotebook(const QList<WordItem> &data)
 {
     model->clear();
-    model->setHorizontalHeaderLabels(QStringList() << "英文" << "中文" << "标记");
+    model->setHorizontalHeaderLabels(QStringList() << "英文" << "中文" << "标记" << "序号（隐藏）");
     ui->tableView->setColumnHidden(3, true);
     for (int i=0; i<data.size(); i++)
     {
@@ -102,7 +102,7 @@ void MainWindow::addWord()
     model->setData(model->index(newRow, 0), "");
     model->setData(model->index(newRow, 1), "");
     model->setData(model->index(newRow, 2), Qt::Unchecked, Qt::CheckStateRole);
-    model->setData(model->index(newRow, 3), QDateTime::currentDateTime().toSecsSinceEpoch());
+    model->setData(model->index(newRow, 3), QDateTime::currentDateTime().toSecsSinceEpoch(), Qt::DisplayRole);
     model->item(newRow, 2)->setFlags((Qt::ItemIsEnabled | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
     // 新的单词项进入编辑状态
     ui->tableView->setFocus();
