@@ -117,6 +117,9 @@ void MainWindow::setCurrNotebook(const QString &c)
 
 void MainWindow::openNotebook()
 {
+    // 需要检查当前单词本的保存状态
+    if (!checkStoreState())
+        return ;
     // 选择已有的单词本
     NotebookList listView(this);
     listView.exec();
@@ -126,19 +129,24 @@ void MainWindow::openNotebook()
     updateStoreState(true);
 }
 
-void MainWindow::saveNotebook()
+bool MainWindow::saveNotebook()
 {
     if (checkAnyWordEmpty()) {
         QMessageBox::warning(this, "错误", "存在单词项为空");
-        return ;
+        return false;
     }
     if (currNotebook == "") {
         setNewNotebookName();
-        return ;
+        // 设置名字成功了
+        if (currNotebook != "")
+            notebookList.append(currNotebook);
+        else
+            return false;
     }
     updateDataFromModel();
     editor->writeNotebook(currNotebook, data);
     updateStoreState(true);
+    return true;
 }
 
 void MainWindow::setNewNotebookName()
@@ -158,6 +166,32 @@ void MainWindow::updateStoreState(bool stored)
         this->setWindowTitle(currNotebook);
     else
         this->setWindowTitle(currNotebook + " *");
+}
+
+bool MainWindow::checkStoreState()
+{
+    if (stored)
+        return true;
+
+    // 弹窗提醒是否保存
+    // 若选择是，进行保存，保存成功返回 true，保存失败返回 false
+    // 若选择否，不进行保存，返回 true，表示可以进行下一步
+    auto result = QMessageBox::question(this, "未保存", "是否保存单词本？", QMessageBox::Yes, QMessageBox::No);
+    if (result == QMessageBox::Yes)
+        if (saveNotebook())
+            return true;
+        else
+            return false;
+    else
+        return true;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (checkStoreState())
+        event->accept();
+    else
+        event->ignore();
 }
 
 void MainWindow::hideChinese(bool hidden)

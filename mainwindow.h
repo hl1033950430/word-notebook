@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QDateTime>
 #include <QMessageBox>
+#include <QCloseEvent>
 #include <memory>
 #include "worditem.h"
 #include "notebook_editor.h"
@@ -32,9 +33,11 @@ public:
     void setCurrNotebook(const QString &c);
     const QStringList& getNotebookList();
 
+    void closeEvent(QCloseEvent *event);
+
 private slots:
     void openNotebook();
-    void saveNotebook();
+    bool saveNotebook();
     void tableViewChanged(const QModelIndex &index);
     void addWord();
     void hideChinese(bool hidden);
@@ -63,6 +66,8 @@ private:
     void setNewNotebookName();
     // 更新是否存储的状态
     void updateStoreState(bool stored);
+    // 再打开新单词本和关闭单词本的时候，需要检查当前单词本的保存状态，返回 true 表示可以进行下一步
+    bool checkStoreState();
 
 };
 #endif // MAINWINDOW_H
