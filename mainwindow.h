@@ -68,6 +68,8 @@ private:
     void updateStoreState(bool stored);
     // 再打开新单词本和关闭单词本的时候，需要检查当前单词本的保存状态，返回 true 表示可以进行下一步
     bool checkStoreState();
+    // 添加删除按钮。初始化单词本、添加新单词时使用
+    void addDeleteButton(int row);
 
 };
 #endif // MAINWINDOW_H

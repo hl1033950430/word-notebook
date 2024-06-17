@@ -34,18 +34,23 @@ MainWindow::~MainWindow()
 void MainWindow::showNotebook(const QList<WordItem> &data)
 {
     model->clear();
-    model->setHorizontalHeaderLabels(QStringList() << "英文" << "中文" << "标记" << "序号（隐藏）");
-    ui->tableView->setColumnHidden(3, true);
+    model->setHorizontalHeaderLabels(QStringList() << "序号（隐藏）" << "英文" << "中文" << "标记" << "删除");
+    ui->tableView->setColumnHidden(0, true);
+    ui->tableView->setColumnWidth(4, 40);
+    ui->tableView->setColumnWidth(3, 40);
     for (int i=0; i<data.size(); i++)
     {
         const WordItem &item = data[i];
         int newRow = model->rowCount();
         model->insertRow(newRow, QModelIndex());
-        model->setData(model->index(newRow, 0), item.english);
-        model->setData(model->index(newRow, 1), item.chinese);
-        model->setData(model->index(newRow, 2), item.mark ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
-        model->setData(model->index(newRow, 3), item.seq);
-        model->item(newRow, 2)->setFlags((Qt::ItemIsEnabled | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
+        model->setData(model->index(newRow, 0), item.seq);
+        model->setData(model->index(newRow, 1), item.english);
+        model->setData(model->index(newRow, 2), item.chinese);
+        // 单词是否被标记
+        model->setData(model->index(newRow, 3), item.mark ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+        model->item(newRow, 3)->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        // 删除按钮
+        addDeleteButton(newRow);
     }
 }
 
@@ -55,10 +60,14 @@ void MainWindow::updateDataFromModel()
     data.reserve(model->rowCount());
     for (int i=0; i<model->rowCount(); i++)
     {
-        QString seq = model->index(i, 3).data().toString();
-        QString english = model->index(i, 0).data().toString();
-        QString chinese = model->index(i, 1).data().toString();
-        QString mark = model->item(i, 2)->checkState() ? "1" : "0";
+        // 判断单词是否被标记为删除
+        if (model->index(i, 4).data().toInt())
+            continue;
+        // 格式转换
+        QString seq = model->index(i, 0).data().toString();
+        QString english = model->index(i, 1).data().toString();
+        QString chinese = model->index(i, 2).data().toString();
+        QString mark = model->item(i, 3)->checkState() ? "1" : "0";
         data.push_back(WordItem(seq, english, chinese, mark));
     }
 }
@@ -86,11 +95,11 @@ void MainWindow::tableViewChanged(const QModelIndex &index)
 {
     int column = index.column();
     // 标记的单词项高亮显示
-    if (column == 2) {
+    if (column == 3) {
         int row = index.row();
-        QBrush color = model->item(row, 2)->checkState() ? QBrush(Qt::yellow) : QBrush(Qt::white);
-        model->item(row, 0)->setBackground(color);
+        QBrush color = model->item(row, 3)->checkState() ? QBrush(Qt::yellow) : QBrush(Qt::white);
         model->item(row, 1)->setBackground(color);
+        model->item(row, 2)->setBackground(color);
     }
     updateStoreState(false);
 }
@@ -99,15 +108,16 @@ void MainWindow::addWord()
 {
     int newRow = model->rowCount();
     model->insertRow(newRow, QModelIndex());
-    model->setData(model->index(newRow, 0), "");
+    model->setData(model->index(newRow, 0), QDateTime::currentDateTime().toSecsSinceEpoch(), Qt::DisplayRole);
     model->setData(model->index(newRow, 1), "");
-    model->setData(model->index(newRow, 2), Qt::Unchecked, Qt::CheckStateRole);
-    model->setData(model->index(newRow, 3), QDateTime::currentDateTime().toSecsSinceEpoch(), Qt::DisplayRole);
-    model->item(newRow, 2)->setFlags((Qt::ItemIsEnabled | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
+    model->setData(model->index(newRow, 2), "");
+    model->setData(model->index(newRow, 3), Qt::Unchecked, Qt::CheckStateRole);
+    model->item(newRow, 3)->setFlags((Qt::ItemIsEnabled | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
+    addDeleteButton(newRow);
     // 新的单词项进入编辑状态
     ui->tableView->setFocus();
-    ui->tableView->setCurrentIndex(model->index(newRow, 0));
-    ui->tableView->edit(model->index(newRow, 0));
+    ui->tableView->setCurrentIndex(model->index(newRow, 1));
+    ui->tableView->edit(model->index(newRow, 1));
 }
 
 void MainWindow::setCurrNotebook(const QString &c)
@@ -174,16 +184,37 @@ bool MainWindow::checkStoreState()
         return true;
 
     // 弹窗提醒是否保存
+    // 返回 true 表示可以进行下一步
     // 若选择是，进行保存，保存成功返回 true，保存失败返回 false
-    // 若选择否，不进行保存，返回 true，表示可以进行下一步
-    auto result = QMessageBox::question(this, "未保存", "是否保存单词本？", QMessageBox::Yes, QMessageBox::No);
+    // 若选择否，不进行保存，返回 true
+    // 若关闭窗口，什么都不做，不进行下一步，返回 false
+    auto result = QMessageBox::question(this, "未保存", "是否保存单词本？", QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
     if (result == QMessageBox::Yes)
         if (saveNotebook())
             return true;
         else
             return false;
-    else
+    else if (result == QMessageBox::No)
         return true;
+    else
+        return false;
+}
+
+void MainWindow::addDeleteButton(int row)
+{
+    // 删除按钮
+    auto buttonIndex = model->index(row, 4);
+    QPushButton *button = new QPushButton("删除");
+    button->setMinimumWidth(10);
+    // 删除的过程：隐藏该行，将该行标记为已删除。在进行保存时，不保标记为删除的单词。
+    connect(button, &QPushButton::clicked, [=](){
+        ui->tableView->setRowHidden(row, true);
+        model->setData(model->index(row, 4), 1);
+        stored = false;
+    });
+    // 显示按钮。默认为未删除。
+    ui->tableView->setIndexWidget(buttonIndex, button);
+    model->setData(model->index(row, 4), 0);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
