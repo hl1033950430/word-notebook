@@ -17,12 +17,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableView->setModel(model);
     showNotebook({});
 
+    ui->searchWordText->setPlaceholderText("输入关键字");
+
     connect(ui->openButton, &QPushButton::clicked, this, &MainWindow::openNotebook);
     connect(ui->addButton, &QPushButton::clicked, this, &MainWindow::addWord);
     connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::saveNotebook);
+    connect(ui->searchButton, &QPushButton::clicked, this, &MainWindow::search);
     connect(ui->hideChinese, &QCheckBox::stateChanged, this, &MainWindow::hideChinese);
     connect(ui->hideEnglish, &QCheckBox::stateChanged, this, &MainWindow::hideEnglish);
-    connect(ui->onlyMarked, &QCheckBox::stateChanged, this, &MainWindow::hideUnmarked);
+    connect(ui->onlyMarked, &QCheckBox::stateChanged, this, &MainWindow::showMarked);
     connect(model, &QAbstractItemModel::dataChanged, this, &MainWindow::tableViewChanged);
 }
 
@@ -210,11 +213,32 @@ void MainWindow::addDeleteButton(int row)
     connect(button, &QPushButton::clicked, [=](){
         ui->tableView->setRowHidden(row, true);
         model->setData(model->index(row, 4), 1);
-        stored = false;
     });
     // 显示按钮。默认为未删除。
     ui->tableView->setIndexWidget(buttonIndex, button);
     model->setData(model->index(row, 4), 0);
+}
+
+QList<int> MainWindow::locateWord(const QString &keyword)
+{
+    QList<int> result;
+    for(int i=0; i<model->rowCount(); i++)
+    {
+        const QString &word = model->index(i, 1).data().toString();
+        if (word.contains(keyword))
+            result.append(i);
+    }
+    return result;
+}
+
+void MainWindow::search()
+{
+    refreshTable();
+}
+
+void MainWindow::showMarked()
+{
+    refreshTable();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -227,19 +251,37 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::hideChinese(bool hidden)
 {
-    ui->tableView->setColumnHidden(1, hidden);
+    ui->tableView->setColumnHidden(2, hidden);
 }
 
 void MainWindow::hideEnglish(bool hidden)
 {
-    ui->tableView->setColumnHidden(0, hidden);
+    ui->tableView->setColumnHidden(1, hidden);
 }
 
 void MainWindow::hideUnmarked(bool hidden)
 {
     for(int i=0; i<model->rowCount(); i++)
-        if (!model->item(i, 2)->checkState())
+        if (model->item(i, 3)->checkState())
+            ui->tableView->setRowHidden(i, false);
+        else
             ui->tableView->setRowHidden(i, hidden);
+}
+
+void MainWindow::refreshTable()
+{
+    // 搜索框中关键字出现的位置
+    const QString &keyword = ui->searchWordText->text();
+    QList<int> locations = locateWord(keyword);
+    QSet<int> location_set = locations.toSet();
+
+    // 考虑单词是否被标记
+    hideUnmarked(ui->onlyMarked->isChecked());
+
+    // 隐藏非关键字的单词、被标记为删除的单词
+    for(int i=0; i<model->rowCount(); i++)
+        if (!location_set.contains(i) || model->index(i, 4).data().toInt())
+            ui->tableView->setRowHidden(i, true);
 }
 
 const QStringList& MainWindow::getNotebookList()

@@ -42,7 +42,8 @@ private slots:
     void addWord();
     void hideChinese(bool hidden);
     void hideEnglish(bool hidden);
-    void hideUnmarked(bool hidden);
+    void showMarked();
+    void search();
 
 private:
     Ui::MainWindow *ui;
@@ -70,6 +71,12 @@ private:
     bool checkStoreState();
     // 添加删除按钮。初始化单词本、添加新单词时使用
     void addDeleteButton(int row);
+    // 定位单词位置的位置
+    QList<int> locateWord(const QString &keyword);
+    // 根据是否标记为重要单词、是否被标记为删除、搜索关键字的条件，刷新表格的显示
+    void refreshTable();
+    // 隐藏未标记的单词，hidden 控制是否隐藏
+    void hideUnmarked(bool hidden);
 
 };
 #endif // MAINWINDOW_H
