@@ -1,5 +1,5 @@
 #include "input_name_window.h"
-#include "ui_inputnamewindow.h"
+#include "ui_input_name_window.h"
 
 InputNameWindow::InputNameWindow(QWidget *parent) :
     QDialog(parent),

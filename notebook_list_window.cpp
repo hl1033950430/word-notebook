@@ -1,5 +1,5 @@
 #include "notebook_list_window.h"
-#include "ui_notebook_list.h"
+#include "ui_notebook_list_window.h"
 
 NotebookList::NotebookList(QWidget *parent) :
     QDialog(parent),
